@@ -997,37 +997,101 @@
             }
         ];
 
-        // ===== API STRUCTURE (READY FOR BACKEND) =====
+        // ===== API STRUCTURE (CONNECTED TO BACKEND) =====
+        const API_BASE_URL = 'http://localhost:5000/api';
+
         const API = {
             getListings: async (filters = {}) => {
-                // TODO: Replace with actual API call
-                // return fetch('/api/listings?' + new URLSearchParams(filters))
-                return listings;
+                try {
+                    const query = new URLSearchParams(filters).toString();
+                    const response = await fetch(`${API_BASE_URL}/listings?${query}`);
+                    if (!response.ok) return listings; // Fallback to mock data
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error fetching listings:', error);
+                    return listings; // Return mock data on error
+                }
             },
             getListingById: async (id) => {
-                // TODO: Replace with actual API call
-                // return fetch(`/api/listings/${id}`)
-                return listings.find(l => l.id === id);
+                try {
+                    const response = await fetch(`${API_BASE_URL}/listings/${id}`);
+                    if (!response.ok) return listings.find(l => l.id === id);
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error fetching listing:', error);
+                    return listings.find(l => l.id === id);
+                }
             },
             getUser: async () => {
-                // TODO: Replace with actual API call
-                // return fetch('/api/user')
-                return state.user;
+                try {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) return state.user;
+                    
+                    const response = await fetch(`${API_BASE_URL}/users/profile`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) return state.user;
+                    const userData = await response.json();
+                    return userData.data || state.user;
+                } catch (error) {
+                    console.error('Error fetching user:', error);
+                    return state.user;
+                }
             },
             login: async (email, password) => {
-                // TODO: Replace with actual API call
-                // return fetch('/api/login', { method: 'POST', body: JSON.stringify({email, password}) })
-                return { success: true };
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await response.json();
+                    if (data.token) {
+                        localStorage.setItem('authToken', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        return { success: true, user: data.user };
+                    }
+                    return { success: false, message: data.message };
+                } catch (error) {
+                    console.error('Login error:', error);
+                    return { success: false, message: 'Login failed' };
+                }
             },
             book: async (listingId, bookingData) => {
-                // TODO: Replace with actual API call
-                // return fetch('/api/bookings', { method: 'POST', body: JSON.stringify({listingId, ...bookingData}) })
-                return { success: true, bookingId: Math.random() };
+                try {
+                    const token = localStorage.getItem('authToken');
+                    const response = await fetch(`${API_BASE_URL}/bookings`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ listingId, ...bookingData })
+                    });
+                    const data = await response.json();
+                    return data.success ? { success: true, bookingId: data.booking._id } : { success: false };
+                } catch (error) {
+                    console.error('Booking error:', error);
+                    return { success: false };
+                }
             },
             createListing: async (listingData) => {
-                // TODO: Replace with actual API call
-                // return fetch('/api/listings', { method: 'POST', body: JSON.stringify(listingData) })
-                return { success: true, listingId: Math.random() };
+                try {
+                    const token = localStorage.getItem('authToken');
+                    const response = await fetch(`${API_BASE_URL}/listings`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(listingData)
+                    });
+                    const data = await response.json();
+                    return data.success ? { success: true, listingId: data.listing._id } : { success: false };
+                } catch (error) {
+                    console.error('Listing creation error:', error);
+                    return { success: false };
+                }
             }
         };
 
