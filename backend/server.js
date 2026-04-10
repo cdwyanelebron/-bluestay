@@ -26,6 +26,12 @@ app.use(cors({
   credentials: true
 }));
 
+// Serve static files (frontend)
+app.use(express.static('../'));
+app.get('/', (req, res) => {
+  res.sendFile(require('path').join(__dirname, '../index.html'));
+});
+
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
